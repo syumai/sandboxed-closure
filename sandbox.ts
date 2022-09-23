@@ -1,4 +1,4 @@
-const srcdoc = (origin, senderId, receiverId) =>
+const srcdoc = (origin: string, senderId: string, receiverId: string) =>
   `<!doctype html>
 <html>
 <body>
@@ -36,7 +36,7 @@ window.parent.postMessage({ id: senderId, ready: true }, origin);
 
 export class Sandbox {
   #iframe;
-  exports;
+  exports = {};
   constructor() {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("sandbox", "allow-scripts");
