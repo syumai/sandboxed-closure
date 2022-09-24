@@ -48,7 +48,7 @@ export class Sandbox {
     const receiverId = crypto.randomUUID();
 
     return new Promise((resolve, reject) => {
-      const handleMessage = (event) => {
+      const handleMessage = (event: MessageEvent) => {
         if (event.source !== this.#iframe.contentWindow) {
           return;
         }
@@ -57,7 +57,7 @@ export class Sandbox {
           return;
         }
         if (ready) {
-          this.#iframe.contentWindow.postMessage(
+          this.#iframe.contentWindow?.postMessage(
             { id: receiverId, src, scope },
             "*"
           );
