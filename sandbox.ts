@@ -35,46 +35,57 @@ window.parent.postMessage({ id: senderId, ready: true }, origin);
 </html>`;
 
 export class Sandbox {
-  #iframe;
+  #iframe: HTMLIFrameElement;
+  #senderId: string;
+  #receiverId: string;
+  #scope: any;
+
   exports = {};
-  constructor() {
+
+  constructor(src: string, scope: any) {
     const iframe = document.createElement("iframe");
     iframe.setAttribute("sandbox", "allow-scripts");
     iframe.setAttribute("style", "display: none");
     this.#iframe = iframe;
+
+    this.#senderId = crypto.randomUUID();
+    this.#receiverId = crypto.randomUUID();
+
+    this.#scope = structuredClone(scope);
+
+    addEventListener("message", this.#handleMessage);
+    this.#iframe.srcdoc = srcdoc(
+      location.origin,
+      this.#senderId,
+      this.#receiverId
+    );
+    document.body.appendChild(this.#iframe);
   }
-  evaluate(src: string) {
-    const senderId = crypto.randomUUID();
-    const receiverId = crypto.randomUUID();
 
-    return new Promise((resolve, reject) => {
-      const handleMessage = (event: MessageEvent) => {
-        if (event.source !== this.#iframe.contentWindow) {
-          return;
-        }
-        const { id, result, error, ready } = event.data ?? {};
-        if (id !== senderId) {
-          return;
-        }
-        if (ready) {
-          this.#iframe.contentWindow?.postMessage(
-            { id: receiverId, src, scope },
-            "*"
-          );
-          return;
-        }
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
-        }
-        removeEventListener("message", handleMessage);
-        document.body.removeChild(this.#iframe);
-      };
-      addEventListener("message", handleMessage);
+  #handleMessage(event: MessageEvent) {
+    if (event.source !== this.#iframe.contentWindow) {
+      return;
+    }
+    const { id, result, error, ready } = event.data ?? {};
+    if (id !== this.#senderId) {
+      return;
+    }
+    if (ready) {
+      this.#iframe.contentWindow?.postMessage(
+        { id: this.#receiverId, src, scope },
+        "*"
+      );
+      return;
+    }
+    if (error) {
+      reject(error);
+    } else {
+      resolve(result);
+    }
+  }
 
-      this.#iframe.srcdoc = srcdoc(location.origin, senderId, receiverId);
-      document.body.appendChild(this.#iframe);
-    });
+  close() {
+    removeEventListener("message", this.#handleMessage);
+    document.body.removeChild(this.#iframe);
   }
 }
